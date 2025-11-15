@@ -109,7 +109,8 @@ N'oubliez pas : Changez le seed du node pour obtenir différentes variations ave
 <img width="2310" height="900" alt="🍄Great_Conditioning_node" src="https://github.com/user-attachments/assets/4d746c52-6e0f-4ce3-8e26-87becdc67392" />
 
 
-🍄Great Interactive Gradient Node
+
+<b>🍄Great Interactive Gradient Node</b>
 ![Interactive_Gradient_Node](https://github.com/user-attachments/assets/94572120-eef0-496e-9b32-6506d0a68c2d)
 
 
