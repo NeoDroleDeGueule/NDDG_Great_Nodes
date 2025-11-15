@@ -1,4 +1,3 @@
-// VERSION V6 - Solution simple : écouteur global mouseup activé dès le mousedown
 // d'après > ComfyUI.mxToolkit.Slider v.0.9.92 - Max Smirnov 2025
 // Great Conditioning Modifier - Custom Slider v1.0
 import { app } from "../../scripts/app.js";
@@ -19,7 +18,7 @@ class GreatSlider {
         this.normalizedPos = this.valueToPosition(this.value);
 
         this.isDragging = false;
-        this.globalMouseUpHandler = null;
+        this.startY = 0;
     }
 
     valueToPosition(value) {
@@ -115,27 +114,12 @@ class GreatSlider {
         const sliderWidth = width - 75;
 
         if (localY >= 5 && localY <= 25) {
-            // Clic sur la barre ou le curseur
             if (localX >= margin && localX <= margin + sliderWidth) {
                 this.isDragging = true;
                 this.updateFromMouse(localX, width);
-                
-                // ✅ SOLUTION : Créer l'écouteur mouseup global immédiatement
-                this.globalMouseUpHandler = () => {
-                    this.isDragging = false;
-                    //alert("this.isDragging = false");
-                    // Nettoyer l'écouteur
-                    document.removeEventListener("mouseup", this.globalMouseUpHandler, true);
-                    this.globalMouseUpHandler = null;
-                };
-                
-                // Ajouter l'écouteur sur document avec capture
-                document.addEventListener("mouseup", this.globalMouseUpHandler, true);
-                
                 return true;
             }
 
-            // Double-clic sur la valeur numérique
             if (localX >= width - 65 && localX <= width - 5) {
                 return "prompt";
             }
@@ -154,13 +138,6 @@ class GreatSlider {
     handleMouseUp(e) {
         if (this.isDragging) {
             this.isDragging = false;
-            
-            // Nettoyer l'écouteur global s'il existe
-            if (this.globalMouseUpHandler) {
-                document.removeEventListener("mouseup", this.globalMouseUpHandler, true);
-                this.globalMouseUpHandler = null;
-            }
-            
             return true;
         }
         return false;
@@ -199,6 +176,7 @@ app.registerExtension({
             const result = onNodeCreated?.apply(this, arguments);
 
             const strengthWidget = this.widgets?.find(w => w.name === "modification_strength");
+
             const savedValue = strengthWidget.value;
 
             if (strengthWidget) {
@@ -215,27 +193,31 @@ app.registerExtension({
             });
 
             this.strengthSlider.setValue(savedValue);
+
             this.sliderHeight = 40;
 
             const originalComputeSize = this.computeSize;
             this.computeSize = function(out) {
                 const size = originalComputeSize ? originalComputeSize.call(this, out) : [this.size[0], this.size[1]];
-                size[1] += this.sliderHeight || 0;
+                size[1] += this.sliderHeight + 10 || 0;
                 return size;
             };
 
             this.size = this.computeSize();
 
-            // PATCH : récupère la vraie valeur chargée par le workflow
+            // ✅✅✅ PATCH CRUCIAL : récupère la vraie valeur chargée par le workflow
             const originalOnConfigure = this.onConfigure;
             this.onConfigure = function(info) {
                 const r = originalOnConfigure?.apply(this, arguments);
+
                 const w = this.widgets?.find(w => w.name === "modification_strength");
                 if (w && this.strengthSlider) {
                     this.strengthSlider.setValue(w.value);
                 }
+
                 return r;
             };
+            // ✅✅✅ FIN DU PATCH
 
             return result;
         };
@@ -282,8 +264,6 @@ app.registerExtension({
                             const num = parseFloat(v);
                             if (!isNaN(num)) {
                                 this.strengthSlider.setValue(num);
-                                const strengthWidget = this.widgets?.find(w => w.name === "modification_strength");
-                                if (strengthWidget) strengthWidget.value = num;
                                 this.setDirtyCanvas(true, true);
                             }
                         },
@@ -305,8 +285,7 @@ app.registerExtension({
         nodeType.prototype.onMouseMove = function(e, localPos, canvas) {
             if (this.strengthSlider && this.strengthSlider.isDragging) {
                 const sliderY = this.size[1] - this.sliderHeight + 5;
-                // Utiliser position globale pour drag hors du node
-                const localX = e.canvasX - this.pos[0];
+                const localX = localPos[0];
                 const localY = localPos[1] - sliderY;
 
                 if (this.strengthSlider.handleMouseMove(e, localX, localY, this.size[0])) {
