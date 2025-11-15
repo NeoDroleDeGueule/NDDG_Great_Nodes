@@ -110,6 +110,7 @@ N'oubliez pas : Changez le seed du node pour obtenir différentes variations ave
 
 
 
+ 
 <b>🍄Great Interactive Gradient Node</b>
 ![Interactive_Gradient_Node](https://github.com/user-attachments/assets/94572120-eef0-496e-9b32-6506d0a68c2d)
 
