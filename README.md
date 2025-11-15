@@ -7,6 +7,7 @@
 📚 Guide des Modificateurs
 
 🔹 > degré d'importance des modifications des valeurs POSITIVES
+
 🔸 > degré d'importance des modifications des valeurs NEGATIVES
 
 <b>🔸 semantic_drift 🔹</b>
