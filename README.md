@@ -10,6 +10,8 @@
 
 🔸 > degré d'importance des modifications des valeurs NEGATIVES
 
+❌ > pas d'utilisation en Positif
+
 <b>🔸 semantic_drift 🔹</b>
 
 Dérive sémantique progressive
