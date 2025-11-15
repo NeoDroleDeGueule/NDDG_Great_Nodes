@@ -1,4 +1,5 @@
 NDDG Great Nodes
+
 📚 Guide des Modificateurs - 🍄Great Conditioning Modifier
 🔸 semantic_drift 🔹
 Dérive sémantique progressive
