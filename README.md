@@ -1,5 +1,5 @@
 <b>NDDG Great Nodes</b>
-
+---------------------------------------------------------------------------------------------------------
 <b>🍄Great Conditioning Modifier</b>
 
 <img width="533" height="434" alt="image" src="https://github.com/user-attachments/assets/78f5e2c1-66fa-4486-aee0-4754942648e4" />
@@ -107,10 +107,7 @@ ________________________________________
 N'oubliez pas : Changez le seed du node pour obtenir différentes variations avec les mêmes paramètres !
 
 <img width="2310" height="900" alt="🍄Great_Conditioning_node" src="https://github.com/user-attachments/assets/4d746c52-6e0f-4ce3-8e26-87becdc67392" />
-
-
-
- 
+---------------------------------------------------------------------------------------------------------
 <b>🍄Great Interactive Gradient Node</b>
 ![Interactive_Gradient_Node](https://github.com/user-attachments/assets/94572120-eef0-496e-9b32-6506d0a68c2d)
 
