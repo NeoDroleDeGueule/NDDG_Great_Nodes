@@ -53,13 +53,13 @@ Filtrage fréquentiel NON FONCTIONNEL
 Ce modificateur analyse votre prompt comme une onde sonore et filtre certaines "fréquences" conceptuelles. Se s’utilise qu’avec des valeurs négatives, c'est un filtre passe-bas qui lisse l'image en gardant seulement les grandes formes et concepts généraux (comme garder uniquement les basses). Pensez-y comme un équaliseur pour vos concepts visuels.
 ________________________________________
 
-🔸 style_shift 🔹</b>
+<b>🔸 style_shift 🔹</b>
 
 Décalage directionnel du style
 Ce modificateur pousse votre prompt dans une "direction" aléatoire mais cohérente dans l'espace des concepts, comme tourner un bouton qui change progressivement le style global. Avec des valeurs positives, vous explorez des variations stylistiques importantes tout en gardant le sujet - l'image peut passer d'un style photoréaliste à pictural, ou d'un éclairage à un autre. Avec des valeurs négatives, la direction est inversée. Parfait pour découvrir des interprétations stylistiques inattendues de votre prompt.
 ________________________________________
 
-🔸 temperature_scale 🔹</b>
+<b>🔸 temperature_scale 🔹</b>
 
 Contrôle de créativité
 Ce modificateur contrôle la "liberté créative" du modèle, exactement comme le paramètre temperature des IA textuelles. Avec des valeurs positives (0.5-1.0), le modèle devient plus audacieux et imprévisible, prenant des libertés artistiques avec votre prompt - idéal pour l'exploration créative. Avec des valeurs négatives, le modèle devient conservateur et prévisible, suivant votre prompt à la lettre avec peu de variations - parfait pour la consistance et la reproduction. C'est le curseur entre "surprends-moi" et "fais exactement ce que je dis".
@@ -95,7 +95,7 @@ Réorganisation par blocs
 Ce modificateur découpe votre prompt en "blocs" conceptuels et les réorganise aléatoirement, tout en préservant la cohérence à l'intérieur de chaque bloc. Avec des valeurs positives croissantes, les blocs deviennent plus petits et le mélange plus chaotique, créant des images surréalistes où les éléments apparaissent dans un ordre inattendu. C'est moins radical que l'embedding_mix car la structure locale est préservée. Parfait pour créer des compositions inhabituelles tout en gardant des éléments reconnaissables.
 ________________________________________
 
-💡 Conseils généraux d'utilisation
+<b>💡 Conseils généraux d'utilisation</b>
 
 •	Débutants : Commencez avec guided_noise (0.2-0.4) et temperature_scale (0.5-0.7)
 •	Variations subtiles : perlin_noise (0.1-0.3), semantic_drift (0.2)
