@@ -1,6 +1,8 @@
 NDDG Great Nodes
 
-📚 Guide des Modificateurs - 🍄Great Conditioning Modifier
+🍄Great Conditioning Modifier
+
+📚 Guide des Modificateurs
 🔸 semantic_drift 🔹
 Dérive sémantique progressive
 Ce modificateur mélange progressivement votre prompt original avec une version bruitée de lui-même, comme si vous ajoutiez du flou artistique à vos instructions. Avec des valeurs positives, l'image s'éloigne doucement du prompt initial tout en gardant une cohérence globale - imaginez un concept qui "dérive" vers des interprétations voisines. Avec des valeurs négatives, l'effet inverse se produit : le prompt est renforcé et moins sujet à variation. Parfait pour obtenir des variations créatives sans perdre complètement le sens original.
