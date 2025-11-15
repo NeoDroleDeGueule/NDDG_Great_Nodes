@@ -1,4 +1,4 @@
-NDDG Great Nodes
+<b>NDDG Great Nodes</b>
 
 🍄Great Conditioning Modifier
 
