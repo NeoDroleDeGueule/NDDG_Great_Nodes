@@ -1,6 +1,7 @@
 NDDG Great Nodes
 
 🍄Great Conditioning Modifier
+<img width="533" height="434" alt="image" src="https://github.com/user-attachments/assets/78f5e2c1-66fa-4486-aee0-4754942648e4" />
 
 📚 Guide des Modificateurs
 🔸 semantic_drift 🔹
