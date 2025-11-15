@@ -68,3 +68,6 @@ ________________________________________
 •	Effets artistiques : quantize (0.7-1.0), block_shuffle (0.5-0.8)
 N'oubliez pas : Changez le seed du node pour obtenir différentes variations avec les mêmes paramètres !
 
+![Interactive_Gradient_Node](https://github.com/user-attachments/assets/94572120-eef0-496e-9b32-6506d0a68c2d)
+
+
