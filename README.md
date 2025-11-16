@@ -5,7 +5,9 @@ ________________________________________
 
 <b>🍄Great Conditioning Modifier</b>
 
-<img width="533" height="434" alt="image" src="https://github.com/user-attachments/assets/78f5e2c1-66fa-4486-aee0-4754942648e4" />
+
+![GreatConditioningModifier](https://github.com/user-attachments/assets/59816f61-02cd-4277-a837-1ca2cd611eb6)
+
 
 <b>📚 Guide des Modificateurs</b>
 
