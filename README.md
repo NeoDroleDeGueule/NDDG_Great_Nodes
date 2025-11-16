@@ -6,7 +6,8 @@ ________________________________________
 <b>🍄Great Conditioning Modifier</b>
 
 
-![GreatConditioningModifier](https://github.com/user-attachments/assets/59816f61-02cd-4277-a837-1ca2cd611eb6)
+![GreatConditioningModifier](https://github.com/user-attachments/assets/961fb145-7120-4e01-b434-2c856502d553)
+
 
 
 <b>📚 Guide des Modificateurs</b>
