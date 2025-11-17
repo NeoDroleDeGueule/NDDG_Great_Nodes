@@ -11,107 +11,180 @@ ________________________________________
 
 
 
-<b>📚 Guide des Modificateurs</b>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Modifier Guide — Clean Layout</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#6ee7b7; --glass: rgba(255,255,255,0.03);
+      --max-width:1100px; --radius:14px;
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,#071021 0%, #071827 60%); color:#e6eef6}
+    .wrap{max-width:var(--max-width);margin:40px auto;padding:28px;}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    header h1{font-size:20px;margin:0;display:flex;gap:12px;align-items:center}
+    header p{margin:0;color:var(--muted);font-size:13px}
 
-🔹 > degré d'importance des modifications des valeurs POSITIVES
+    .grid{display:grid;grid-template-columns:1fr 340px;gap:20px}
+    .main{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:22px;border-radius:var(--radius);box-shadow:0 6px 30px rgba(2,6,23,0.6)}
+    .sidebar{padding:18px;background:var(--card);border-radius:12px;min-height:200px}
 
-🔸 > degré d'importance des modifications des valeurs NEGATIVES
+    .intro{margin-bottom:18px}
+    .legend{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+    .legend span{padding:8px 10px;border-radius:10px;background:var(--glass);font-size:13px;color:var(--muted)}
 
-❌ > pas d'utilisation en Positif
+    .modifier-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.02)}
+    .card h3{margin:0 0 8px 0;font-size:15px}
+    .card p{margin:0;color:var(--muted);line-height:1.45;font-size:14px}
+    .card .meta{margin-top:10px;font-size:13px;color:var(--muted)}
 
-<b>🔸 semantic_drift 🔹</b>
+    .tips{margin-top:18px;padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(110,231,183,0.03), rgba(255,255,255,0.01));border:1px solid rgba(110,231,183,0.06)}
+    .tips ul{margin:8px 0 0 20px;color:var(--muted)}
 
-Dérive sémantique progressive
-Ce modificateur mélange progressivement votre prompt original avec une version bruitée de lui-même, comme si vous ajoutiez du flou artistique à vos instructions. Avec des valeurs positives, l'image s'éloigne doucement du prompt initial tout en gardant une cohérence globale - imaginez un concept qui "dérive" vers des interprétations voisines. Avec des valeurs négatives, l'effet inverse se produit : le prompt est renforcé et moins sujet à variation. Parfait pour obtenir des variations créatives sans perdre complètement le sens original.
-________________________________________
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
 
-<b>🔸🔸🔸 token_dropout 🔹🔹</b>
+    /* Responsive */
+    @media (max-width:900px){.grid{grid-template-columns:1fr}.sidebar{order:2}.main{order:1}}
 
-Suppression sélective de tokens
-Imagine que votre prompt soit composé de plusieurs mots-clés que le modèle "écoute". Ce modificateur en ignore aléatoirement certains, comme si vous changiez temporairement de sujet en cours de génération. Avec des valeurs positives, certains éléments de votre description sont ignorés, créant des images plus abstraites ou surprenantes car le modèle doit "deviner" les parties manquantes. Avec des valeurs négatives, l'effet inverse force le modèle à se concentrer uniquement sur quelques tokens spécifiques, créant des images plus épurées et focalisées.
-________________________________________
+    /* small helpers */
+    .label{display:inline-block;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,0.03);font-size:12px;color:var(--muted)}
+    .accent{color:var(--accent)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1><b>📚 Modifier Guide</b></h1>
+      <p>Clean HTML layout of the modifier descriptions — responsive and printable.</p>
+    </header>
 
-<b>🔸🔸🔸 gradient_amplify 🔹🔹</b>
+    <div class="grid">
+      <main class="main">
+        <section class="intro">
+          <div class="legend">
+            <span>🔹 &gt; degree of importance for <b>POSITIVE</b> value modifications</span>
+            <span>🔸 &gt; degree of importance for <b>NEGATIVE</b> value modifications</span>
+            <span>❌ &gt; no use in <b>Positive</b></span>
+          </div>
+          <p style="color:var(--muted);margin-top:8px">Below are concise, well-structured descriptions for each modifier. Each card explains intent, typical effects for positive and negative values, and suggested use cases.</p>
+        </section>
 
-Amplification des transitions conceptuelles
-Ce modificateur agit sur les "transitions" entre les différents éléments de votre prompt. Pensez-y comme un contrôle de contraste pour les concepts : avec des valeurs positives, les différences entre les parties de votre description sont exagérées, créant des images plus dramatiques avec des contrastes marqués entre les éléments. Avec des valeurs négatives, les transitions sont lissées, donnant des images plus harmonieuses et fondues, où tout se mélange en douceur. Utile pour contrôler l'intensité dramatique de vos générations.
-________________________________________
+        <section class="modifier-list">
 
-<b>🔸🔸🔸 guided_noise 🔹🔹🔹</b>
+          <article class="card">
+            <h3><b>🔸 semantic_drift 🔹</b></h3>
+            <p>Progressive semantic drift — gradually blends the original prompt with a noisier version. <br><span class="meta"><b>Positive:</b> gentle drift toward neighboring interpretations. <b>Negative:</b> reinforces prompt, reduces variation. Use for creative variants that keep meaning.</span></p>
+          </article>
 
-Bruit guidé proportionnel
-C'est le modificateur le plus universel et prévisible. Il ajoute du "bruit créatif" proportionnel à l'intensité de votre prompt - comme ajouter du grain à une photo. Avec des valeurs positives (0.2-0.5), vous obtenez des variations naturelles de votre image de base, parfait pour générer plusieurs versions similaires mais uniques. Avec des valeurs négatives, vous soustrayez ce bruit, stabilisant l'image et la rendant plus prévisible. C'est l'outil idéal pour commencer car ses effets sont progressifs et contrôlables.
-________________________________________
+          <article class="card">
+            <h3><b>🔸🔸🔸 token_dropout 🔹🔹</b></h3>
+            <p>Selective token removal — randomly ignores tokens to create abstract or surprising outputs. <br><span class="meta"><b>Positive:</b> more abstract images (missing elements). <b>Negative:</b> focuses on few tokens for cleaner results.</span></p>
+          </article>
 
-<b>🔸 quantize 🔹🔹🔹🔹</b>
+          <article class="card">
+            <h3><b>🔸🔸🔸 gradient_amplify 🔹🔹</b></h3>
+            <p>Amplifies transitions between prompt elements (conceptual contrast). <br><span class="meta"><b>Positive:</b> stronger contrasts and dramatic images. <b>Negative:</b> smoother, harmonious blends.</span></p>
+          </article>
 
-Quantification et stabilisation
-Ce modificateur réduit la "précision" des instructions données au modèle, comme passer d'une image en millions de couleurs à une palette limitée. Avec des valeurs positives élevées (0.5-1.0), l'image devient plus stylisée et graphique, avec des choix plus tranchés et moins de nuances subtiles - idéal pour un rendu artistique simplifié. Avec des valeurs négatives, l'effet inverse ajoute du dithering (grain fin) qui enrichit les détails et les micro-variations, créant des images plus organiques et texturées.
-________________________________________
+          <article class="card">
+            <h3><b>🔸🔸🔸 guided_noise 🔹🔹🔹</b></h3>
+            <p>Proportional guided noise — predictable creative noise like film grain. <br><span class="meta"><b>Positive (0.2–0.5):</b> natural variations. <b>Negative:</b> stabilizes and makes images predictable.</span></p>
+          </article>
 
-<b>🔸🔸🔸 perlin_noise 🔹🔹🔹🔹</b>
+          <article class="card">
+            <h3><b>🔸 quantize 🔹🔹🔹🔹</b></h3>
+            <p>Quantization and stabilization — reduces instruction precision for a stylized, graphic look. <br><span class="meta"><b>Positive (0.5–1.0):</b> stylized, limited-palette aesthetic. <b>Negative:</b> adds fine dithering and texture.</span></p>
+          </article>
 
-Bruit structuré cohérent
-Contrairement au bruit aléatoire classique, le bruit de Perlin crée des variations "naturelles" et continues, comme les motifs des nuages ou du bois. Avec des valeurs positives, vos images acquièrent une qualité organique fluide, avec des variations douces qui semblent naturelles plutôt que chaotiques. Les éléments se transforment progressivement au lieu de changer brusquement. Avec des valeurs négatives, vous obtenez l'effet inverse qui "dé-structure" ces patterns, créant des images plus fragmentées. Excellent pour des rendus naturels ou abstraits fluides.
+          <article class="card">
+            <h3><b>🔸🔸🔸 perlin_noise 🔹🔹🔹🔹</b></h3>
+            <p>Coherent structured noise — Perlin noise produces natural, flowing variations. <br><span class="meta"><b>Positive:</b> organic, smooth variations. <b>Negative:</b> de-structures patterns to create fragmentation.</span></p>
+          </article>
 
-________________________________________
+          <article class="card">
+            <h3><b>🔸🔸🔸 fourier_filter ❌</b></h3>
+            <p>NON-FUNCTIONAL frequency filtering — conceptual low-pass filter (negative values only). <br><span class="meta"><b>Negative:</b> keeps broad shapes and general concepts; smooths fine detail.</span></p>
+          </article>
 
-<b>🔸🔸🔸 fourier_filter ❌</b>
+          <article class="card">
+            <h3><b>🔸 style_shift 🔹</b></h3>
+            <p>Directional style shift — pushes the prompt in a coherent stylistic direction. <br><span class="meta"><b>Positive:</b> explore large stylistic shifts while keeping the subject. <b>Negative:</b> inverse directional shift.</span></p>
+          </article>
 
-Filtrage fréquentiel NON FONCTIONNEL
-Ce modificateur analyse votre prompt comme une onde sonore et filtre certaines "fréquences" conceptuelles. Se s’utilise qu’avec des valeurs négatives, c'est un filtre passe-bas qui lisse l'image en gardant seulement les grandes formes et concepts généraux (comme garder uniquement les basses). Pensez-y comme un équaliseur pour vos concepts visuels.
-________________________________________
+          <article class="card">
+            <h3><b>🔸 temperature_scale 🔹</b></h3>
+            <p>Creativity control — like temperature in text models. <br><span class="meta"><b>Positive (0.5–1.0):</b> bolder, less predictable. <b>Negative:</b> conservative and consistent outputs.</span></p>
+          </article>
 
-<b>🔸 style_shift 🔹</b>
+          <article class="card">
+            <h3><b>🔸 embedding_mix 🔹</b></h3>
+            <p>Mixing and reorganization — rearranges internal order of prompt elements. <br><span class="meta"><b>Positive:</b> unexpected combinations. <b>Negative:</b> separates concepts for clarity.</span></p>
+          </article>
 
-Décalage directionnel du style
-Ce modificateur pousse votre prompt dans une "direction" aléatoire mais cohérente dans l'espace des concepts, comme tourner un bouton qui change progressivement le style global. Avec des valeurs positives, vous explorez des variations stylistiques importantes tout en gardant le sujet - l'image peut passer d'un style photoréaliste à pictural, ou d'un éclairage à un autre. Avec des valeurs négatives, la direction est inversée. Parfait pour découvrir des interprétations stylistiques inattendues de votre prompt.
-________________________________________
+          <article class="card">
+            <h3><b>🔸 svd_filter 🔹</b></h3>
+            <p>Complexity-based filtering (Advanced) — decomposes prompt into components. <br><span class="meta"><b>Positive:</b> amplifies mid-level details. <b>Negative:</b> simplifies for minimalistic results.</span></p>
+          </article>
 
-<b>🔸 temperature_scale 🔹</b>
+          <article class="card">
+            <h3><b>🔸 spherical_rotation 🔹</b></h3>
+            <p>Conceptual rotation (Advanced) — rotates prompt in multidimensional concept space. <br><span class="meta"><b>Positive:</b> radical variations that preserve overall weight of the prompt.</span></p>
+          </article>
 
-Contrôle de créativité
-Ce modificateur contrôle la "liberté créative" du modèle, exactement comme le paramètre temperature des IA textuelles. Avec des valeurs positives (0.5-1.0), le modèle devient plus audacieux et imprévisible, prenant des libertés artistiques avec votre prompt - idéal pour l'exploration créative. Avec des valeurs négatives, le modèle devient conservateur et prévisible, suivant votre prompt à la lettre avec peu de variations - parfait pour la consistance et la reproduction. C'est le curseur entre "surprends-moi" et "fais exactement ce que je dis".
-________________________________________
+          <article class="card">
+            <h3><b>🔸 principal_component 🔹</b></h3>
+            <p>Modification of principal axes (Advanced) — identifies and alters main axes of variation. <br><span class="meta"><b>Positive:</b> emphasize dominant features. <b>Negative:</b> attenuate them to simplify.</span></p>
+          </article>
 
-<b>🔸 embedding_mix 🔹</b>
+          <article class="card">
+            <h3><b>🔸 block_shuffle 🔹</b></h3>
+            <p>Block-based reorganization — splits prompt into blocks and shuffles them. <br><span class="meta"><b>Positive:</b> smaller blocks and more chaotic shuffles create surreal compositions while preserving local structure.</span></p>
+          </article>
 
-Mélange et réorganisation
-Ce modificateur réarrange l'ordre interne des éléments de votre prompt, comme mélanger les cartes d'un jeu. Avec des valeurs positives, les différentes parties de votre description sont "mélangées", créant des combinaisons inattendues - un personnage pourrait hériter d'attributs destinés au décor. Avec des valeurs négatives, l'effet "démélange" en accentuant les séparations, rendant chaque élément plus distinct. Utile pour créer des hybridations créatives ou au contraire séparer clairement les concepts.
-________________________________________
+        </section>
 
-<b>🔸 svd_filter 🔹</b>
+        <section class="tips">
+          <h3 style="margin:0 0 6px 0">💡 General Usage Tips</h3>
+          <ul>
+            <li>Beginners: Start with <span class="label">guided_noise (0.2–0.4)</span> and <span class="label">temperature_scale (0.5–0.7)</span>.</li>
+            <li>Subtle variations: <span class="label">perlin_noise (0.1–0.3)</span>, <span class="label">semantic_drift (0.2)</span>.</li>
+            <li>Creative exploration: <span class="label">style_shift (0.5–0.8)</span>, <span class="label">spherical_rotation (0.6–1.0)</span>.</li>
+            <li>Stabilization: Negative values on <span class="label">temperature_scale (–0.3 to –0.5)</span>.</li>
+            <li>Artistic effects: <span class="label">quantize (0.7–1.0)</span>, <span class="label">block_shuffle (0.5–0.8)</span>.</li>
+          </ul>
+          <p style="margin-top:8px;color:var(--muted)">Don't forget: Change the seed of the node to get different variations with the same parameters!</p>
+        </section>
 
-Filtrage par complexité (Avancé)
-Ce modificateur décompose mathématiquement votre prompt en "composantes de complexité" et les modifie sélectivement. Avec des valeurs positives, il amplifie les détails de niveau moyen, enrichissant les nuances et la sophistication visuelle de votre image. Avec des valeurs négatives, il simplifie le concept en réduisant ces composantes, créant des images plus épurées et minimalistes. Pensez-y comme un filtre qui contrôle la "richesse conceptuelle" de votre génération.
-________________________________________
+        <footer>
+          <p>Designed for clarity and quick scanning. Use this HTML as a reference panel or paste into a documentation site.</p>
+        </footer>
 
-<b>🔸 spherical_rotation 🔹</b>
+      </main>
 
-Rotation conceptuelle (Avancé)
-Ce modificateur fait "tourner" votre prompt dans l'espace multidimensionnel des concepts tout en préservant son intensité globale, comme faire pivoter un objet 3D. Avec des valeurs positives élevées, vous obtenez des variations radicales qui gardent le "poids" du prompt original mais explorent des angles complètement différents. Les résultats peuvent être très surprenants car le sujet reste mais son interprétation change dramatiquement. Excellent pour l'exploration créative extrême.
-________________________________________
+      <aside class="sidebar">
+        <h4 style="margin:0 0 8px 0">Quick Controls</h4>
+        <p style="color:var(--muted);margin-top:0">You can copy the HTML, edit values, or export as a single-file reference.</p>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+          <button style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--accent);cursor:pointer">Copy HTML</button>
+          <button style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--muted);cursor:pointer">Print</button>
+        </div>
 
-<b>🔸 principal_component 🔹</b>
+        <div style="margin-top:18px">
+          <h5 style="margin:0 0 6px 0">Legend</h5>
+          <p style="margin:0;color:var(--muted);font-size:13px">🔹 positive influence — increases variation<br>🔸 negative influence — reduces variation<br>❌ not usable in positive</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>
 
-Modification des axes principaux (Avancé)
-Ce modificateur identifie les "axes principaux" de votre prompt (les directions de variation les plus importantes) et les modifie. Avec des valeurs positives, il amplifie ces axes dominants, créant des images qui poussent à l'extrême les caractéristiques principales de votre description. Avec des valeurs négatives, il les atténue, simplifiant l'image en réduisant sa dimensionnalité conceptuelle. C'est comme choisir entre "accentuer ce qui compte le plus" ou "aplatir pour simplifier".
-________________________________________
-
-<b>🔸 block_shuffle 🔹</b>
-
-Réorganisation par blocs
-Ce modificateur découpe votre prompt en "blocs" conceptuels et les réorganise aléatoirement, tout en préservant la cohérence à l'intérieur de chaque bloc. Avec des valeurs positives croissantes, les blocs deviennent plus petits et le mélange plus chaotique, créant des images surréalistes où les éléments apparaissent dans un ordre inattendu. C'est moins radical que l'embedding_mix car la structure locale est préservée. Parfait pour créer des compositions inhabituelles tout en gardant des éléments reconnaissables.
-________________________________________
-
-<b>💡 Conseils généraux d'utilisation</b>
-
-•	Débutants : Commencez avec guided_noise (0.2-0.4) et temperature_scale (0.5-0.7)
-•	Variations subtiles : perlin_noise (0.1-0.3), semantic_drift (0.2)
-•	Exploration créative : style_shift (0.5-0.8), spherical_rotation (0.6-1.0)
-•	Stabilisation : Valeurs négatives sur temperature_scale (-0.3 à -0.5)
-•	Effets artistiques : quantize (0.7-1.0), block_shuffle (0.5-0.8)
-N'oubliez pas : Changez le seed du node pour obtenir différentes variations avec les mêmes paramètres !
 
  
 <img width="2310" height="900" alt="🍄Great_Conditioning_node" src="https://github.com/user-attachments/assets/1dbc3b63-c14e-49bb-b3ff-c5c2cd0f68c0" />
