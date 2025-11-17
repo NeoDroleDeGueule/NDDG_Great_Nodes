@@ -18,183 +18,6 @@ import colorsys
 import random
 import math
 
-class KSamplerQwenRandomNoise:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "model": ("MODEL",),
-                "add_noise": (["enable", "disable"],),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
-                "steps": ("INT", {"default": 8, "min": 1, "max": 10000}),
-                "cfg": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 100.0}),
-                "sampler_name": (comfy.samplers.KSampler.SAMPLERS,),
-                "scheduler": (comfy.samplers.KSampler.SCHEDULERS,),
-                "positive": ("CONDITIONING",),
-                "negative": ("CONDITIONING",),
-                "latent_image": ("LATENT",),
-                "start_at_step": ("INT", {"default": 0, "min": 0, "max": 10000}),
-                "end_at_step": ("INT", {"default": 10000, "min": 0, "max": 10000}),
-                "return_with_leftover_noise": (["disable", "enable"],),
-                "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "noise_inject_step": ("INT", {"default": -1, "min": -1, "max": 10000}),
-                "noise_strength": ("FLOAT", {"default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01}),
-                # Nouveaux paramètres pour la perturbation du conditionnement
-                "conditioning_noise": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1, "step": 0.001}),
-                "conditioning_seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
-            }
-        }
-
-    RETURN_TYPES = ("LATENT", "STRING",)
-    FUNCTION = "sample"
-    CATEGORY = "sampling/qwen"
-    # ------------------------------------------------ #
-
-    def _qwen_to_sd(self, latent):
-        if latent.ndim == 5:
-            latent = latent.squeeze(2)
-        b, c, h, w = latent.shape
-        if c != 4:
-            latent_sd = latent[:, :4, :, :].contiguous()
-        else:
-            latent_sd = latent
-        return latent_sd
-
-    def _perturb_conditioning(self, conditioning, strength, seed):
-        """Perturbe légèrement les embeddings du conditionnement"""
-        if strength <= 0 or not conditioning:
-            return conditioning
-
-        new_conditioning = []
-        generator = torch.Generator().manual_seed(seed)
-
-        for c in conditioning:
-            if isinstance(c, dict):
-                new_cond = {}
-                for key, value in c.items():
-                    if key == "cond" and isinstance(value, torch.Tensor):
-                        # Ajouter du bruit aux embeddings
-                        noise = torch.randn_like(value, generator=generator) * strength
-                        new_cond[key] = value + noise
-                    else:
-                        new_cond[key] = value
-                new_conditioning.append(new_cond)
-            else:
-                # Si ce n'est pas un dictionnaire, on le laisse tel quel
-                new_conditioning.append(c)
-
-        return new_conditioning
-
-    def sample(
-        self, model, add_noise, seed, steps, cfg,
-        sampler_name, scheduler, positive, negative,
-        latent_image, start_at_step, end_at_step,
-        return_with_leftover_noise, denoise,
-        noise_inject_step, noise_strength,
-        conditioning_noise=0.0, conditioning_seed=0
-    ):
-        device = comfy.model_management.get_torch_device()
-        disable_noise = (add_noise == "disable")
-        force_full_denoise = (return_with_leftover_noise == "disable")
-
-        if latent_image is None or "samples" not in latent_image:
-            raise ValueError("[QWEN] latent_image invalide ou vide.")
-
-        latent = latent_image["samples"].to(device=device, dtype=torch.float32)
-        qwen_mode = latent.shape[1] == 16 or latent.ndim == 5
-        print(f"[QWEN MODE] {'Qwen/Wan' if qwen_mode else 'Standard SD'} mode")
-
-        if not qwen_mode and latent.ndim == 5:
-            latent = latent.squeeze(2)
-        elif qwen_mode and latent.ndim == 4:
-            latent = latent.unsqueeze(2)
-
-        # Appliquer la perturbation du conditionnement si demandée
-        if conditioning_noise > 0:
-            positive = self._perturb_conditioning(positive, conditioning_noise, conditioning_seed)
-
-        if noise_inject_step >= 0 and start_at_step <= noise_inject_step <= end_at_step:
-            samples_phase1 = common_ksampler(
-                model, seed, steps, cfg, sampler_name, scheduler,
-                positive, negative, {"samples": latent},
-                denoise=denoise, disable_noise=disable_noise,
-                start_step=start_at_step, last_step=noise_inject_step,
-                force_full_denoise=False
-            )
-            phase1 = samples_phase1[0]["samples"]
-            noise = torch.randn_like(phase1)
-            mixed_samples = (1 - noise_strength) * phase1 + noise_strength * noise
-            samples_phase2 = common_ksampler(
-                model, seed + 1, steps, cfg, sampler_name, scheduler,
-                positive, negative, {"samples": mixed_samples},
-                denoise=1.0, disable_noise=True,
-                start_step=noise_inject_step, last_step=end_at_step,
-                force_full_denoise=force_full_denoise
-            )
-            final = samples_phase2[0]["samples"]
-        else:
-            samples_result = common_ksampler(
-                model, seed, steps, cfg, sampler_name, scheduler,
-                positive, negative, {"samples": latent},
-                denoise=denoise, disable_noise=disable_noise,
-                start_step=start_at_step, last_step=end_at_step,
-                force_full_denoise=force_full_denoise
-            )
-            final = samples_result[0]["samples"]
-
-        if final.ndim == 5:
-            final = final.squeeze(2)
-        final = self._validate_latent(final, qwen_mode, device)
-
-        # Ajouter des informations sur la perturbation du conditionnement dans le retour
-        info = f"[QWEN] {'Qwen' if qwen_mode else 'SD'} OK"
-        if conditioning_noise > 0:
-            info += f" | Cond Noise: {conditioning_noise}"
-        return ({"samples": final}, info)
-
-    def _validate_latent(self, x, qwen_mode, device):
-        x = x.to(device, dtype=torch.float32)
-        if qwen_mode:
-            if x.ndim == 4:
-                x = x.unsqueeze(2)
-            b, c, t, h, w = x.shape
-            if c != 16:
-                pad = torch.zeros((b, 16, t, h, w), device=device, dtype=torch.float32)
-                pad[:, :min(c,16)] = x[:, :min(c,16)]
-                x = pad
-        else:
-            if x.ndim == 5:
-                x = x.squeeze(2)
-            b, c, h, w = x.shape
-            if c != 4:
-                proj = nn.Conv2d(c, 4, 1).to(device)
-                x = proj(x)
-        print(f"[QWEN OK] latent final shape: {tuple(x.shape)}")
-        return x.contiguous()
-
-# ----------------------------------------------------------------------------------#
-# ----------------------------------------------------------------------------------#
-
-class QwenToSDLatent:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {"required": {"latent": ("LATENT",)}}
-    RETURN_TYPES = ("LATENT",)
-    FUNCTION = "convert"
-    CATEGORY = "latent/fix"
-
-    # ------------------------------------------------ #
-
-    def convert(self, latent):
-        z = latent["samples"]
-        if z.ndim == 5:
-            z = z.squeeze(2)
-        b, c, h, w = z.shape
-        device = z.device
-        if c != 4:
-            proj = nn.Conv2d(c, 4, 1).to(device)
-            z = proj(z)
-        return ({"samples": z.contiguous()},)
 
 # ----------------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------------#
@@ -248,7 +71,7 @@ class GreatConditioningModifier:
 
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "modify"
-    CATEGORY = "Qwen/conditioning"
+    CATEGORY = "NDDG/conditioning"
 
     def __init__(self):
         self.device = comfy.model_management.get_torch_device()
@@ -969,7 +792,7 @@ class ImageBlendNode:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "blend"
-    CATEGORY = "Image/Blend"
+    CATEGORY = "NDDG/Blend"
 
     # Définir les couleurs directement dans la classe
     @classmethod  
@@ -1092,7 +915,7 @@ class GreatRandomOrganicGradientNode:
     RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
     RETURN_NAMES = ("image", "palette_image", "palette_hex")
     FUNCTION = "make_gradient"
-    CATEGORY = "Random/Generators"
+    CATEGORY = "NDDG/Generators"
 
     def make_gradient(self, width, height, colors, blob_count, blob_shape, blur_strength,
                       background_color, random_background, random_palette,
