@@ -11,11 +11,6 @@ ________________________________________
 
 
 
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Modifier Guide — Clean Layout</title>
   <style>
     :root{
@@ -180,10 +175,7 @@ ________________________________________
           <p style="margin:0;color:var(--muted);font-size:13px">🔹 positive influence — increases variation<br>🔸 negative influence — reduces variation<br>❌ not usable in positive</p>
         </div>
       </aside>
-    </div>
-  </div>
-</body>
-</html>
+
 
 
  
