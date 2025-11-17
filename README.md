@@ -97,7 +97,7 @@ This modifier cuts your prompt into conceptual “blocks” and rearranges them 
 • Stabilization: Negative values on temperature_scale (–0.3 to –0.5)
 • Artistic effects: quantize (0.7–1.0), block_shuffle (0.5–0.8)
 
-Don't forget: Change the seed of the node to get different variations with the same parameters!
+<b>Don't forget: Change the seed of the node to get different variations with the same parameters!</b>
 
 
 
