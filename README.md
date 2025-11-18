@@ -66,6 +66,7 @@ Creativity control
 This modifier controls the model’s “creative freedom,” exactly like the temperature parameter in text-based AIs. With positive values (0.5–1.0), the model becomes bolder and more unpredictable, taking artistic liberties with your prompt — ideal for creative exploration. With negative values, the model becomes conservative and predictable, following your prompt strictly with few variations — perfect for consistency and replication. It's the slider between “surprise me” and “do exactly what I say.”
 
 <b>🔸 embedding_mix 🔹</b>
+<i>Does not work with Flux</i>
 
 Mixing and reorganization
 This modifier rearranges the internal order of elements in your prompt, like shuffling a deck of cards. With positive values, different parts of your description are “mixed,” creating unexpected combinations — a character might inherit attributes intended for the background. With negative values, the effect “unmixes” by accentuating separations, making each element more distinct. Useful for creative hybridizations or, on the contrary, clearly separating concepts.
