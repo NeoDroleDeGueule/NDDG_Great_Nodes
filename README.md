@@ -24,10 +24,8 @@ ________________________________________
 Progressive semantic drift
 This modifier gradually blends your original prompt with a noisier version of itself, as if adding artistic blur to your instructions. With positive values, the image gently drifts away from the initial prompt while keeping overall coherence — imagine a concept "drifting" into neighboring interpretations. With negative values, the opposite occurs: the prompt is reinforced and becomes less prone to variation. Perfect for achieving creative variations without losing the original meaning.
 
-<b>🔸🔸🔸 token_dropout 🔹🔹</b>
-
-<i>Does not work with Flux</i>
-
+<b>🔸🔸🔸 token_dropout 🔹🔹</b> 
+<i>Does not work with Flux</i> 
 Selective token removal
 Imagine your prompt is composed of several keywords the model "listens to." This modifier randomly ignores some of them, as if you temporarily changed the subject mid-generation. With positive values, some elements of your description are skipped, creating more abstract or surprising images because the model must "guess" the missing parts. With negative values, the opposite effect forces the model to concentrate on only a few specific tokens, producing cleaner, more focused images.
 
