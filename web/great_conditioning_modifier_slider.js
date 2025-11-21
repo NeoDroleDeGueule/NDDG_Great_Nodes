@@ -1,5 +1,5 @@
 // d'après > ComfyUI.mxToolkit.Slider v.0.9.92 - Max Smirnov 2025
-// Great Conditioning Modifier - Custom Slider v1.0
+// Great Conditioning Modifier - Custom Slider v1.0 - Fixed
 import { app } from "../../scripts/app.js";
 
 class GreatSlider {
@@ -18,7 +18,6 @@ class GreatSlider {
         this.normalizedPos = this.valueToPosition(this.value);
 
         this.isDragging = false;
-        this.startY = 0;
     }
 
     valueToPosition(value) {
@@ -110,24 +109,30 @@ class GreatSlider {
     }
 
     handleMouseDown(e, localX, localY, width) {
+        // Vérifier que c'est le bouton gauche (button === 0)
+        if (e.button !== 0) return false;
+
         const margin = 10;
         const sliderWidth = width - 75;
 
         if (localY >= 5 && localY <= 25) {
+            // Zone du texte de valeur (clic pour prompt)
+            if (localX >= width - 65 && localX <= width - 5) {
+                return "prompt";
+            }
+            
+            // Zone du slider
             if (localX >= margin && localX <= margin + sliderWidth) {
                 this.isDragging = true;
                 this.updateFromMouse(localX, width);
                 return true;
-            }
-
-            if (localX >= width - 65 && localX <= width - 5) {
-                return "prompt";
             }
         }
         return false;
     }
 
     handleMouseMove(e, localX, localY, width) {
+        // Ne bouger que si on est en train de glisser
         if (this.isDragging) {
             this.updateFromMouse(localX, width);
             return true;
@@ -136,6 +141,7 @@ class GreatSlider {
     }
 
     handleMouseUp(e) {
+        // Relâchement du bouton gauche : arrêter l'interaction
         if (this.isDragging) {
             this.isDragging = false;
             return true;
@@ -162,6 +168,11 @@ class GreatSlider {
         }
         return false;
     }
+
+    // Méthode pour forcer l'arrêt du dragging (sécurité)
+    stopDragging() {
+        this.isDragging = false;
+    }
 }
 
 app.registerExtension({
@@ -177,7 +188,7 @@ app.registerExtension({
 
             const strengthWidget = this.widgets?.find(w => w.name === "modification_strength");
 
-            const savedValue = strengthWidget.value;
+            const savedValue = strengthWidget ? strengthWidget.value : 0.0;
 
             if (strengthWidget) {
                 strengthWidget.hidden = true;
@@ -205,7 +216,6 @@ app.registerExtension({
 
             this.size = this.computeSize();
 
-            // ✅✅✅ PATCH CRUCIAL : récupère la vraie valeur chargée par le workflow
             const originalOnConfigure = this.onConfigure;
             this.onConfigure = function(info) {
                 const r = originalOnConfigure?.apply(this, arguments);
@@ -217,7 +227,6 @@ app.registerExtension({
 
                 return r;
             };
-            // ✅✅✅ FIN DU PATCH
 
             return result;
         };
@@ -283,7 +292,16 @@ app.registerExtension({
 
         const onMouseMove = nodeType.prototype.onMouseMove;
         nodeType.prototype.onMouseMove = function(e, localPos, canvas) {
+            // Ne traiter le mouvement que si on est en train de glisser ET que le bouton gauche est toujours enfoncé
             if (this.strengthSlider && this.strengthSlider.isDragging) {
+                // Vérifier si le bouton gauche est toujours appuyé (e.buttons & 1)
+                if (!(e.buttons & 1)) {
+                    // Le bouton a été relâché sans que onMouseUp soit appelé
+                    this.strengthSlider.stopDragging();
+                    this.setDirtyCanvas(true, true);
+                    return false;
+                }
+
                 const sliderY = this.size[1] - this.sliderHeight + 5;
                 const localX = localPos[0];
                 const localY = localPos[1] - sliderY;
@@ -307,6 +325,17 @@ app.registerExtension({
             }
 
             return onMouseUp?.apply(this, arguments);
+        };
+
+        // Sécurité supplémentaire : arrêter le dragging si la souris quitte le canvas
+        const onMouseLeave = nodeType.prototype.onMouseLeave;
+        nodeType.prototype.onMouseLeave = function(e) {
+            if (this.strengthSlider && this.strengthSlider.isDragging) {
+                this.strengthSlider.stopDragging();
+                this.setDirtyCanvas(true, true);
+            }
+
+            return onMouseLeave?.apply(this, arguments);
         };
     }
 });
