@@ -112,4 +112,11 @@ ________________________________________
 <b>🍄Great Interactive Gradient Node</b>
 ![Interactive_Gradient_Node](https://github.com/user-attachments/assets/94572120-eef0-496e-9b32-6506d0a68c2d)
 
+________________________________________
+________________________________________
+
+<b>🍄Great Random Organic Gradient Node</b>
+
+<img width="1194" height="816" alt="image" src="https://github.com/user-attachments/assets/f857fb4a-0fae-46a5-8540-2d34324e0b6e" />
+
 
