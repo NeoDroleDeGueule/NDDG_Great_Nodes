@@ -1036,10 +1036,12 @@ class GreatRandomOrganicGradientNode:
 NODE_CLASS_MAPPINGS = {
     "GreatConditioningModifier": GreatConditioningModifier,
     "InteractiveOrganicGradientNode": InteractiveOrganicGradientNode,
-    "ImageBlendNode": ImageBlendNode
+    "ImageBlendNode": ImageBlendNode,
+    "GreatRandomOrganicGradientNode": GreatRandomOrganicGradientNode
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "GreatConditioningModifier": "🍄Great Conditioning Modifier",
     "InteractiveOrganicGradientNode": "🍄Great Interactive Organic Gradient",
-    "ImageBlendNode": "🍄Great Image Blend"
+    "ImageBlendNode": "🍄Great Image Blend",
+    "GreatRandomOrganicGradientNode" : "🍄Great Random Organic Gradient"
 }
