@@ -899,14 +899,14 @@ class GreatRandomOrganicGradientNode:
                 "background_color": ("STRING", {"default": "#FFFFFF", "widget": {"type": "color", "format":"hex"}}),
                 "random_background": ("BOOLEAN", {"default": False}),
                 "random_palette": ("BOOLEAN", {"default": True}),
-                "color1": ("STRING", {"default": "#c7c7c7", "widget": {"type": "color", "format":"hex"}}),
-                "color2": ("STRING", {"default": "#4ECDC4", "widget": {"type": "color", "format":"hex"}}),
-                "color3": ("STRING", {"default": "#45B7D1", "widget": {"type": "color", "format":"hex"}}),
-                "color4": ("STRING", {"default": "#FFA07A", "widget": {"type": "color", "format":"hex"}}),
-                "color5": ("STRING", {"default": "#98D8C8", "widget": {"type": "color", "format":"hex"}}),
-                "color6": ("STRING", {"default": "#F7DC6F", "widget": {"type": "color", "format":"hex"}}),
-                "color7": ("STRING", {"default": "#BB8FCE", "widget": {"type": "color", "format":"hex"}}),
-                "color8": ("STRING", {"default": "#85C1E2", "widget": {"type": "color", "format":"hex"}}),
+                "color1": ("STRING", {"default": "#c7c7c7", "multiline": False, "dynamicPrompts": False}),
+                "color2": ("STRING", {"default": "#c7c7c7", "multiline": False, "dynamicPrompts": False}),
+                "color3": ("STRING", {"default": "#c7c7c7", "multiline": False, "dynamicPrompts": False}),
+                "color4": ("STRING", {"default": "#c7c7c7", "multiline": False, "dynamicPrompts": False}),
+                "color5": ("STRING", {"default": "#c7c7c7", "multiline": False, "dynamicPrompts": False}),
+                "color6": ("STRING", {"default": "#c7c7c7", "multiline": False, "dynamicPrompts": False}),
+                "color7": ("STRING", {"default": "#c7c7c7", "multiline": False, "dynamicPrompts": False}),
+                "color8": ("STRING", {"default": "#c7c7c7", "multiline": False, "dynamicPrompts": False}),
                 "seed": ("INT", {"default": -1, "min": -1, "max": 999999}),
                 "transparent_background": ("BOOLEAN", {"default": False}),
             }
@@ -915,7 +915,7 @@ class GreatRandomOrganicGradientNode:
     RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
     RETURN_NAMES = ("image", "palette_image", "palette_hex")
     FUNCTION = "make_gradient"
-    CATEGORY = "NDDG/Generators"
+    CATEGORY = "Random/Generators"
 
     def make_gradient(self, width, height, colors, blob_count, blob_shape, blur_strength,
                       background_color, random_background, random_palette,
