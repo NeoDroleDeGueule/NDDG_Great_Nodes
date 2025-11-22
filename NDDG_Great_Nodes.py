@@ -915,7 +915,7 @@ class GreatRandomOrganicGradientNode:
     RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
     RETURN_NAMES = ("image", "palette_image", "palette_hex")
     FUNCTION = "make_gradient"
-    CATEGORY = "Random/Generators"
+    CATEGORY = "NDDG/Generators"
 
     def make_gradient(self, width, height, colors, blob_count, blob_shape, blur_strength,
                       background_color, random_background, random_palette,
