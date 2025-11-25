@@ -119,4 +119,14 @@ ________________________________________
 
 <img width="1194" height="816" alt="image" src="https://github.com/user-attachments/assets/f857fb4a-0fae-46a5-8540-2d34324e0b6e" />
 
+________________________________________
+________________________________________
+
+<b>🍄Great_thick_border.js</b>
+
+To see immediately which node is currently running!!
+
+<img width="1423" height="777" alt="image" src="https://github.com/user-attachments/assets/5cb387c3-a447-419c-94e9-d52dc59ca197" />
+
+<img width="361" height="779" alt="image" src="https://github.com/user-attachments/assets/36510418-e63a-4435-94b0-7a1504b12365" />
 
