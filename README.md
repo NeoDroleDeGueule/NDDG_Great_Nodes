@@ -10,7 +10,7 @@ ________________________________________
 
 
 
-
+For Qwen-image, Z-image, Flux1 and Flux2
   <b>📚 Modifier Guide</b>
 
 🔹 > degree of importance for POSITIVE value modifications
