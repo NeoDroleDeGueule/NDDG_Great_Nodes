@@ -25,8 +25,7 @@ For Qwen-image, Z-image, Flux1 and Flux2.
 Progressive semantic drift
 This modifier gradually blends your original prompt with a noisier version of itself, as if adding artistic blur to your instructions. With positive values, the image gently drifts away from the initial prompt while keeping overall coherence — imagine a concept "drifting" into neighboring interpretations. With negative values, the opposite occurs: the prompt is reinforced and becomes less prone to variation. Perfect for achieving creative variations without losing the original meaning.
 
-<b>🔸🔸🔸 token_dropout 🔹🔹</b> 
-<i>Does not work with Flux</i>
+<b>🔸🔸🔸 token_dropout 🔹🔹</b>
 
 Selective token removal
 Imagine your prompt is composed of several keywords the model "listens to." This modifier randomly ignores some of them, as if you temporarily changed the subject mid-generation. With positive values, some elements of your description are skipped, creating more abstract or surprising images because the model must "guess" the missing parts. With negative values, the opposite effect forces the model to concentrate on only a few specific tokens, producing cleaner, more focused images.
@@ -67,7 +66,6 @@ Creativity control
 This modifier controls the model’s “creative freedom,” exactly like the temperature parameter in text-based AIs. With positive values (0.5–1.0), the model becomes bolder and more unpredictable, taking artistic liberties with your prompt — ideal for creative exploration. With negative values, the model becomes conservative and predictable, following your prompt strictly with few variations — perfect for consistency and replication. It's the slider between “surprise me” and “do exactly what I say.”
 
 <b>🔸 embedding_mix 🔹</b>
-<i>Does not work with Flux</i>
 
 Mixing and reorganization
 This modifier rearranges the internal order of elements in your prompt, like shuffling a deck of cards. With positive values, different parts of your description are “mixed,” creating unexpected combinations — a character might inherit attributes intended for the background. With negative values, the effect “unmixes” by accentuating separations, making each element more distinct. Useful for creative hybridizations or, on the contrary, clearly separating concepts.
