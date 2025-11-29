@@ -24,8 +24,8 @@ import math
 
 class GreatConditioningModifier:
     """
-    Node pour modifier les conditionnements Qwen-Image
-    Version avec support textuel ET numérique
+    Node pour modifier les conditionnements Qwen-Image, Flux et Flux2
+    Version avec support automatique des types de tenseurs
     """
 
     @classmethod
@@ -45,21 +45,20 @@ class GreatConditioningModifier:
                     "max": 0xffffffffffffffff
                 }),
                 "modification_method": ([
-                    "🔸semantic_drift🔹",             # Dérive sémantique progressive
-                    "🔸🔸🔸token_dropout🔹🔹",   # Ignore certains tokens
-                    "🔸🔸🔸gradient_amplify🔹🔹",   # ✨ NOUVEAU: Amplification des gradients locaux
-                    "🔸🔸🔸guided_noise🔹🔹🔹",      # Bruit proportionnel à l'embedding
-                    "🔸quantize🔹🔹🔹🔹",          # ✨ NOUVEAU: Quantification/stabilisation
-                    "🔸🔸🔸perlin_noise🔹🔹🔹🔹",   # ✨ NOUVEAU: Bruit structuré Perlin
-                    "🔸🔸🔸fourier_filter x",   # ✨ NOUVEAU: Filtrage fréquentiel
-                    "🔸style_shift🔹",              # Décale le style de l'image
-                    "🔸temperature_scale🔹",        # Augmente/réduit la "créativité"
-                    "🔸embedding_mix🔹",            # Mélange avec bruit structuré
-                    "🔸svd_filter🔹",               # ✨ NOUVEAU: Filtre par valeurs singulières
-                    "🔸spherical_rotation🔹",       # ✨ NOUVEAU: Rotation dans l'espace sphérique
-                    "🔸principal_component🔹",      # ✨ NOUVEAU: Modification des composantes principales
-                    "🔸block_shuffle🔹",            # ✨ NOUVEAU: Shuffle par blocs
-                    
+                    "🔸semantic_drift🔹",
+                    "🔸🔸🔸token_dropout🔹🔹",
+                    "🔸🔸🔸gradient_amplify🔹🔹",
+                    "🔸🔸🔸guided_noise🔹🔹🔹",
+                    "🔸quantize🔹🔹🔹🔹",
+                    "🔸🔸🔸perlin_noise🔹🔹🔹🔹",
+                    "🔸🔸🔸fourier_filter🔹🔹🔹🔹",
+                    "🔸style_shift🔹",
+                    "🔸temperature_scale🔹",
+                    "🔸embedding_mix🔹",
+                    "🔸svd_filter🔹",
+                    "🔸spherical_rotation🔹",
+                    "🔸principal_component🔹",
+                    "🔸block_shuffle🔹",
                 ], {
                     "default": "🔸semantic_drift🔹"
                 }),
@@ -71,20 +70,105 @@ class GreatConditioningModifier:
 
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "modify"
-    CATEGORY = "NDDG/conditioning"
+    CATEGORY = "🍄NDDG/conditioning"
 
     def __init__(self):
         self.device = comfy.model_management.get_torch_device()
 
+    def _is_modifiable_tensor(self, tensor, debug=False):
+        """
+        Détermine si un tenseur peut être modifié
+        Retourne (can_modify, reason)
+        """
+        # Vérifier le dtype
+        if not tensor.dtype.is_floating_point:
+            if debug:
+                print(f"   ⚠️ Skipping tensor: dtype={tensor.dtype} (not float)")
+            return False, f"dtype {tensor.dtype} not supported"
+        
+        # Vérifier la taille minimale
+        if tensor.numel() < 2:
+            if debug:
+                print(f"   ⚠️ Skipping tensor: numel={tensor.numel()} (too small)")
+            return False, "tensor too small"
+        
+        # Vérifier les valeurs
+        if not torch.isfinite(tensor).all():
+            if debug:
+                print(f"   ⚠️ Skipping tensor: contains inf/nan")
+            return False, "contains inf/nan"
+        
+        return True, "OK"
+
+    def _safe_convert_to_float(self, tensor, debug=False):
+        """
+        Convertit un tenseur en float de manière sécurisée
+        Retourne (converted_tensor, success)
+        """
+        try:
+            # Si déjà en float, retourner tel quel
+            if tensor.dtype.is_floating_point:
+                return tensor, True
+            
+            # Tentative de conversion
+            if tensor.dtype in [torch.int64, torch.int32, torch.int16, torch.int8]:
+                if debug:
+                    print(f"   🔄 Converting {tensor.dtype} to float32")
+                # Normaliser les entiers (supposés être des IDs de tokens)
+                # Ne pas modifier les IDs directement, juste les ignorer
+                return tensor, False
+            
+            if tensor.dtype == torch.bool:
+                if debug:
+                    print(f"   🔄 Boolean tensor detected, skipping")
+                return tensor, False
+            
+            # Autres types : essayer float32
+            converted = tensor.to(torch.float32)
+            return converted, True
+            
+        except Exception as e:
+            if debug:
+                print(f"   ❌ Conversion failed: {e}")
+            return tensor, False
+
     def _apply_modification(self, tensor, method, strength, seed, debug=False):
-        """Applique des modifications numériques avancées"""
+        """Applique des modifications numériques avancées avec gestion des types"""
+        
+        # NOUVELLE VÉRIFICATION: Type et compatibilité
+        can_modify, reason = self._is_modifiable_tensor(tensor, debug)
+        if not can_modify:
+            if debug:
+                print(f"   ⏭️ Tensor non modifiable: {reason}")
+            return tensor
+        
         torch.manual_seed(seed)
         if tensor.is_cuda:
             torch.cuda.manual_seed(seed)
         
         modified = tensor.clone()
-        original_std = tensor.std()
-        original_mean = tensor.mean()
+        
+        # NOUVELLE SÉCURITÉ: Calcul robuste des statistiques
+        try:
+            original_std = tensor.std()
+            original_mean = tensor.mean()
+            
+            # Vérifier que les statistiques sont valides
+            if not torch.isfinite(original_std) or not torch.isfinite(original_mean):
+                if debug:
+                    print(f"   ⚠️ Invalid statistics, skipping modification")
+                return tensor
+            
+            # Éviter division par zéro
+            if original_std < 1e-8:
+                if debug:
+                    print(f"   ⚠️ Std too small ({original_std:.2e}), adding epsilon")
+                original_std = torch.tensor(1e-6, device=tensor.device)
+                
+        except Exception as e:
+            if debug:
+                print(f"   ❌ Statistics calculation failed: {e}")
+            return tensor
         
         abs_strength = abs(strength)
         is_negative = strength < 0
@@ -92,271 +176,226 @@ class GreatConditioningModifier:
         if debug:
             sign = "négatif" if is_negative else "positif"
             print(f"\n🔧 Modification: {method} (strength={strength:.2f}, {sign})")
-            print(f"   Shape: {tensor.shape}")
+            print(f"   Shape: {tensor.shape}, dtype: {tensor.dtype}")
             print(f"   Avant - Mean: {original_mean.item():.4f}, Std: {original_std.item():.4f}")
         
-        # ========== MÉTHODES EXISTANTES ==========
+        # ========== MÉTHODES AVEC PROTECTION ==========
         
-        if method == "🔸🔸🔸guided_noise🔹🔹🔹":
-            noise = torch.randn_like(modified)
-            noise = noise * original_std * abs_strength
-            modified = modified + noise if not is_negative else modified - noise
+        try:
+            if method == "🔸🔸🔸guided_noise🔹🔹🔹":
+                noise = torch.randn_like(modified)
+                noise = noise * original_std * abs_strength
+                modified = modified + noise if not is_negative else modified - noise
+                
+            elif method == "🔸style_shift🔹":
+                direction = torch.randn(1, 1, modified.shape[-1], device=modified.device)
+                direction = direction / (direction.norm() + 1e-8) * original_std
+                shift = direction * abs_strength * 10.0
+                modified = modified + shift if not is_negative else modified - shift
+                
+            elif method == "🔸semantic_drift🔹":
+                noise = torch.randn_like(modified) * original_std * 0.5
+                alpha = min(abs_strength * 0.7, 1.0)
+                if is_negative:
+                    modified = modified * (1 + alpha * 0.3) - noise * alpha
+                else:
+                    modified = modified * (1 - alpha) + (modified + noise) * alpha
+                
+            elif method == "🔸temperature_scale🔹":
+                if strength < 0:
+                    temperature = max(0.01, 0.1 + (1.0 + strength / 10.0) * 0.9)
+                elif strength == 0:
+                    temperature = 1.0
+                else:
+                    temperature = 1.0 + (min(strength, 10.0) / 10.0) * 3.0
+                
+                modified = (modified - original_mean) * temperature + original_mean
+                
+                if temperature > 1.5:
+                    extra_noise = torch.randn_like(modified) * original_std * (temperature - 1.0) * 0.15
+                    modified = modified + extra_noise
+                
+                if debug:
+                    print(f"   Temperature: {temperature:.3f}")
+                
+            elif method == "🔸🔸🔸token_dropout🔹🔹":
+                if len(modified.shape) >= 2:
+                    dropout_rate = min(abs_strength * 0.5, 0.95)
+                    if is_negative:
+                        mask = torch.rand(modified.shape[0], modified.shape[1], 1, device=modified.device) < dropout_rate
+                    else:
+                        mask = torch.rand(modified.shape[0], modified.shape[1], 1, device=modified.device) > dropout_rate
+                    modified = modified * mask
+                    
+            elif method == "🔸embedding_mix🔹":
+                perm_indices = torch.randperm(modified.shape[1])
+                permuted = modified[:, perm_indices, :]
+                alpha = min(abs_strength * 0.6, 1.0)
+                if is_negative:
+                    modified = modified * (1 + alpha * 0.5) - permuted * alpha * 0.5
+                else:
+                    modified = modified * (1 - alpha) + permuted * alpha
             
-        elif method == "🔸style_shift🔹":
-            direction = torch.randn(1, 1, modified.shape[-1], device=modified.device)
-            direction = direction / direction.norm() * original_std
-            shift = direction * abs_strength * 10.0
-            modified = modified + shift if not is_negative else modified - shift
+            elif method == "🔸svd_filter🔹":
+                if len(modified.shape) == 3:
+                    batch, seq, embed = modified.shape
+                    reshaped = modified.reshape(batch * seq, embed)
+                    
+                    U, S, Vh = torch.linalg.svd(reshaped, full_matrices=False)
+                    
+                    if is_negative:
+                        S_modified = S * (1.0 - abs_strength * 0.5)
+                    else:
+                        filter_curve = torch.exp(-torch.linspace(0, 3, len(S), device=S.device) * abs_strength)
+                        S_modified = S * (1.0 + filter_curve)
+                    
+                    reconstructed = U @ torch.diag_embed(S_modified) @ Vh
+                    modified = reconstructed.reshape(batch, seq, embed)
+                    
+                    if debug:
+                        print(f"   SVD: {len(S)} composantes, top-3: {S[:3].tolist()}")
             
-        elif method == "🔸semantic_drift🔹":
-            noise = torch.randn_like(modified) * original_std * 0.5
-            alpha = min(abs_strength * 0.7, 1.0)
-            if is_negative:
-                modified = modified * (1 + alpha * 0.3) - noise * alpha
-            else:
-                modified = modified * (1 - alpha) + (modified + noise) * alpha
+            elif method == "🔸🔸🔸perlin_noise🔹🔹🔹🔹":
+                if len(modified.shape) == 3:
+                    batch, seq, embed = modified.shape
+                    freq = max(1, int(5 * (1.0 - abs_strength * 0.5)))
+                    
+                    control_points = torch.randn(batch, max(2, seq // freq), embed, device=modified.device)
+                    
+                    indices = torch.linspace(0, control_points.shape[1] - 1, seq, device=modified.device)
+                    idx_floor = indices.long().clamp(0, control_points.shape[1] - 2)
+                    idx_ceil = (idx_floor + 1).clamp(0, control_points.shape[1] - 1)
+                    weight = (indices - idx_floor.float()).unsqueeze(0).unsqueeze(-1)
+                    
+                    perlin = (control_points[:, idx_floor] * (1 - weight) + 
+                             control_points[:, idx_ceil] * weight)
+                    
+                    perlin = perlin * original_std * abs_strength
+                    modified = modified + perlin if not is_negative else modified - perlin
+                    
+                    if debug:
+                        print(f"   Perlin: freq={freq}, points={control_points.shape[1]}")
             
-        elif method == "🔸temperature_scale🔹":
-            if strength < 0:
-                temperature = max(0.01, 0.1 + (1.0 + strength / 10.0) * 0.9)
-            elif strength == 0:
-                temperature = 1.0
-            else:
-                temperature = 1.0 + (min(strength, 10.0) / 10.0) * 3.0
+            elif method == "🔸spherical_rotation🔹":
+                if len(modified.shape) == 3:
+                    norms = modified.norm(dim=-1, keepdim=True) + 1e-8
+                    normalized = modified / norms
+                    
+                    num_rotations = min(modified.shape[-1] // 2, int(abs_strength * 100))
+                    
+                    for _ in range(num_rotations):
+                        dim1 = torch.randint(0, modified.shape[-1], (1,)).item()
+                        dim2 = torch.randint(0, modified.shape[-1], (1,)).item()
+                        if dim1 == dim2:
+                            continue
+                        
+                        angle = abs_strength * 0.1 if not is_negative else -abs_strength * 0.1
+                        cos_a, sin_a = torch.cos(torch.tensor(angle)), torch.sin(torch.tensor(angle))
+                        
+                        x = normalized[:, :, dim1].clone()
+                        y = normalized[:, :, dim2].clone()
+                        normalized[:, :, dim1] = x * cos_a - y * sin_a
+                        normalized[:, :, dim2] = x * sin_a + y * cos_a
+                    
+                    modified = normalized * norms
+                    
+                    if debug:
+                        print(f"   Rotations: {num_rotations} plans")
             
-            modified = (modified - original_mean) * temperature + original_mean
+            elif method == "🔸🔸🔸fourier_filter🔹🔹🔹🔹":
+                if len(modified.shape) == 3:
+                    fft = torch.fft.fft(modified, dim=1)
+                    freqs = torch.fft.fftfreq(modified.shape[1], device=modified.device)
+                    
+                    if is_negative:
+                        cutoff = 1.0 - abs_strength * 0.8
+                        filter_mask = (freqs.abs() < cutoff).float().unsqueeze(0).unsqueeze(-1)
+                    else:
+                        cutoff = abs_strength * 0.5
+                        filter_mask = (freqs.abs() > cutoff).float().unsqueeze(0).unsqueeze(-1)
+                    
+                    fft_filtered = fft * filter_mask
+                    modified = torch.fft.ifft(fft_filtered, dim=1).real
+                    
+                    if debug:
+                        print(f"   Fourier: cutoff={cutoff:.3f}, {'low-pass' if is_negative else 'high-pass'}")
             
-            if temperature > 1.5:
-                extra_noise = torch.randn_like(modified) * original_std * (temperature - 1.0) * 0.15
-                modified = modified + extra_noise
+            elif method == "🔸principal_component🔹":
+                if len(modified.shape) == 3:
+                    batch, seq, embed = modified.shape
+                    centered = modified - modified.mean(dim=1, keepdim=True)
+                    cov = (centered.transpose(1, 2) @ centered) / seq
+                    
+                    eigenvalues, eigenvectors = torch.linalg.eigh(cov)
+                    projected = centered @ eigenvectors
+                    
+                    if is_negative:
+                        scale = 1.0 - abs_strength * 0.5
+                        projected = projected * scale
+                    else:
+                        weights = torch.linspace(1.0 + abs_strength, 1.0, embed, device=modified.device)
+                        projected = projected * weights.unsqueeze(0).unsqueeze(1)
+                    
+                    modified = projected @ eigenvectors.transpose(1, 2) + modified.mean(dim=1, keepdim=True)
+                    
+                    if debug:
+                        print(f"   PCA: top eigenvalue={eigenvalues[0, -1].item():.4f}")
             
+            elif method == "🔸block_shuffle🔹":
+                if len(modified.shape) == 3:
+                    batch, seq, embed = modified.shape
+                    block_size = max(1, int(seq * (1.0 - abs_strength * 0.5)))
+                    
+                    num_blocks = seq // block_size
+                    if num_blocks > 1:
+                        blocks = modified[:, :num_blocks * block_size].reshape(batch, num_blocks, block_size, embed)
+                        perm = torch.randperm(num_blocks)
+                        shuffled_blocks = blocks[:, perm]
+                        modified[:, :num_blocks * block_size] = shuffled_blocks.reshape(batch, num_blocks * block_size, embed)
+                    
+                    if debug:
+                        print(f"   Block shuffle: {num_blocks} blocks de {block_size}")
+            
+            elif method == "🔸quantize🔹🔹🔹🔹":
+                if is_negative:
+                    dither = torch.randn_like(modified) * original_std * abs_strength * 0.1
+                    modified = modified + dither
+                else:
+                    num_levels = max(2, int(256 * (1.0 - abs_strength * 0.9)))
+                    min_val = modified.min()
+                    max_val = modified.max()
+                    normalized = (modified - min_val) / (max_val - min_val + 1e-8)
+                    quantized = torch.round(normalized * (num_levels - 1)) / (num_levels - 1)
+                    modified = quantized * (max_val - min_val) + min_val
+                    
+                    if debug:
+                        print(f"   Quantize: {num_levels} niveaux")
+            
+            elif method == "🔸🔸🔸gradient_amplify🔹🔹":
+                if len(modified.shape) == 3:
+                    diff = modified[:, 1:] - modified[:, :-1]
+                    
+                    if is_negative:
+                        diff = diff * (1.0 - abs_strength * 0.5)
+                    else:
+                        diff = diff * (1.0 + abs_strength * 2.0)
+                    
+                    modified[:, 1:] = modified[:, :1] + torch.cumsum(diff, dim=1)
+                    
+                    if debug:
+                        grad_strength = diff.abs().mean().item()
+                        print(f"   Gradient strength: {grad_strength:.4f}")
+            
+            # Vérification finale
+            if not torch.isfinite(modified).all():
+                if debug:
+                    print(f"   ⚠️ Modification produced inf/nan, reverting")
+                return tensor
+                
+        except Exception as e:
             if debug:
-                print(f"   Temperature: {temperature:.3f}")
-            
-        elif method == "🔸🔸🔸token_dropout🔹🔹":
-            if len(modified.shape) >= 2:
-                dropout_rate = min(abs_strength * 0.5, 0.95)
-                if is_negative:
-                    mask = torch.rand(modified.shape[0], modified.shape[1], 1, device=modified.device) < dropout_rate
-                else:
-                    mask = torch.rand(modified.shape[0], modified.shape[1], 1, device=modified.device) > dropout_rate
-                modified = modified * mask
-                
-        elif method == "🔸embedding_mix🔹":
-            perm_indices = torch.randperm(modified.shape[1])
-            permuted = modified[:, perm_indices, :]
-            alpha = min(abs_strength * 0.6, 1.0)
-            if is_negative:
-                modified = modified * (1 + alpha * 0.5) - permuted * alpha * 0.5
-            else:
-                modified = modified * (1 - alpha) + permuted * alpha
-        
-        # ========== NOUVELLES MÉTHODES AVANCÉES ==========
-        
-        elif method == "🔸svd_filter🔹":
-            # Décomposition en valeurs singulières et filtrage
-            # Utile pour modifier la "complexité" du concept
-            if len(modified.shape) == 3:
-                batch, seq, embed = modified.shape
-                reshaped = modified.reshape(batch * seq, embed)
-                
-                U, S, Vh = torch.linalg.svd(reshaped, full_matrices=False)
-                
-                # Modifier les valeurs singulières selon strength
-                if is_negative:
-                    # Négatif: réduire les composantes principales (simplification)
-                    S_modified = S * (1.0 - abs_strength * 0.5)
-                else:
-                    # Positif: amplifier certaines composantes
-                    # Créer un filtre qui amplifie les composantes moyennes
-                    filter_curve = torch.exp(-torch.linspace(0, 3, len(S), device=S.device) * abs_strength)
-                    S_modified = S * (1.0 + filter_curve)
-                
-                # Reconstruction
-                reconstructed = U @ torch.diag_embed(S_modified) @ Vh
-                modified = reconstructed.reshape(batch, seq, embed)
-                
-                if debug:
-                    print(f"   SVD: {len(S)} composantes, top-3: {S[:3].tolist()}")
-        
-        elif method == "🔸🔸🔸perlin_noise🔹🔹🔹🔹":
-            # Bruit de Perlin structuré (simulation simplifiée)
-            # Plus cohérent que le bruit gaussien
-            if len(modified.shape) == 3:
-                batch, seq, embed = modified.shape
-                
-                # Créer un bruit basse fréquence
-                freq = max(1, int(5 * (1.0 - abs_strength * 0.5)))
-                
-                # Générer des points de contrôle
-                control_points = torch.randn(batch, max(2, seq // freq), embed, device=modified.device)
-                
-                # Interpolation linéaire pour créer un bruit lisse
-                indices = torch.linspace(0, control_points.shape[1] - 1, seq, device=modified.device)
-                idx_floor = indices.long().clamp(0, control_points.shape[1] - 2)
-                idx_ceil = (idx_floor + 1).clamp(0, control_points.shape[1] - 1)
-                weight = (indices - idx_floor.float()).unsqueeze(0).unsqueeze(-1)
-                
-                perlin = (control_points[:, idx_floor] * (1 - weight) + 
-                         control_points[:, idx_ceil] * weight)
-                
-                perlin = perlin * original_std * abs_strength
-                modified = modified + perlin if not is_negative else modified - perlin
-                
-                if debug:
-                    print(f"   Perlin: freq={freq}, points={control_points.shape[1]}")
-        
-        elif method == "🔸spherical_rotation🔹":
-            # Rotation dans l'espace sphérique (préserve la norme)
-            if len(modified.shape) == 3:
-                # Normaliser
-                norms = modified.norm(dim=-1, keepdim=True) + 1e-8
-                normalized = modified / norms
-                
-                # Créer une rotation aléatoire dans des plans 2D
-                num_rotations = min(modified.shape[-1] // 2, int(abs_strength * 100))
-                
-                for _ in range(num_rotations):
-                    dim1 = torch.randint(0, modified.shape[-1], (1,)).item()
-                    dim2 = torch.randint(0, modified.shape[-1], (1,)).item()
-                    if dim1 == dim2:
-                        continue
-                    
-                    angle = abs_strength * 0.1 if not is_negative else -abs_strength * 0.1
-                    cos_a, sin_a = torch.cos(torch.tensor(angle)), torch.sin(torch.tensor(angle))
-                    
-                    x = normalized[:, :, dim1].clone()
-                    y = normalized[:, :, dim2].clone()
-                    normalized[:, :, dim1] = x * cos_a - y * sin_a
-                    normalized[:, :, dim2] = x * sin_a + y * cos_a
-                
-                # Restaurer les normes
-                modified = normalized * norms
-                
-                if debug:
-                    print(f"   Rotations: {num_rotations} plans")
-        
-        elif method == "🔸🔸🔸fourier_filter x":
-            # Filtrage fréquentiel (comme un filtre passe-haut/passe-bas)
-            if len(modified.shape) == 3:
-                # FFT sur la dimension séquentielle
-                fft = torch.fft.fft(modified, dim=1)
-                
-                # Créer un filtre
-                freqs = torch.fft.fftfreq(modified.shape[1], device=modified.device)
-                
-                if is_negative:
-                    # Négatif: filtre passe-bas (garde basses fréquences, lisse)
-                    cutoff = 1.0 - abs_strength * 0.8
-                    filter_mask = (freqs.abs() < cutoff).float().unsqueeze(0).unsqueeze(-1)
-                else:
-                    # Positif: filtre passe-haut (garde hautes fréquences, détails)
-                    cutoff = abs_strength * 0.5
-                    filter_mask = (freqs.abs() > cutoff).float().unsqueeze(0).unsqueeze(-1)
-                
-                fft_filtered = fft * filter_mask
-                modified = torch.fft.ifft(fft_filtered, dim=1).real
-                
-                if debug:
-                    print(f"   Fourier: cutoff={cutoff:.3f}, {'low-pass' if is_negative else 'high-pass'}")
-        
-        elif method == "🔸principal_component🔹":
-            # Modification des composantes principales (PCA-like)
-            if len(modified.shape) == 3:
-                batch, seq, embed = modified.shape
-                
-                # Centrer les données
-                centered = modified - modified.mean(dim=1, keepdim=True)
-                
-                # Calculer la matrice de covariance
-                cov = (centered.transpose(1, 2) @ centered) / seq
-                
-                # Eigendecomposition
-                eigenvalues, eigenvectors = torch.linalg.eigh(cov)
-                
-                # Projeter sur les composantes principales
-                projected = centered @ eigenvectors
-                
-                # Modifier les composantes selon strength
-                if is_negative:
-                    # Réduire les composantes principales (simplification)
-                    scale = 1.0 - abs_strength * 0.5
-                    projected = projected * scale
-                else:
-                    # Amplifier les premières composantes
-                    weights = torch.linspace(1.0 + abs_strength, 1.0, embed, device=modified.device)
-                    projected = projected * weights.unsqueeze(0).unsqueeze(1)
-                
-                # Reprojeter
-                modified = projected @ eigenvectors.transpose(1, 2) + modified.mean(dim=1, keepdim=True)
-                
-                if debug:
-                    print(f"   PCA: top eigenvalue={eigenvalues[0, -1].item():.4f}")
-        
-        elif method == "🔸block_shuffle🔹":
-            # Shuffle par blocs (préserve la structure locale)
-            if len(modified.shape) == 3:
-                batch, seq, embed = modified.shape
-                block_size = max(1, int(seq * (1.0 - abs_strength * 0.5)))
-                
-                num_blocks = seq // block_size
-                if num_blocks > 1:
-                    # Découper en blocs
-                    blocks = modified[:, :num_blocks * block_size].reshape(batch, num_blocks, block_size, embed)
-                    
-                    # Permuter les blocs
-                    perm = torch.randperm(num_blocks)
-                    shuffled_blocks = blocks[:, perm]
-                    
-                    modified[:, :num_blocks * block_size] = shuffled_blocks.reshape(batch, num_blocks * block_size, embed)
-                
-                if debug:
-                    print(f"   Block shuffle: {num_blocks} blocks de {block_size}")
-        
-        elif method == "🔸quantize🔹🔹🔹🔹":
-            # Quantification (réduit la précision, stabilise)
-            if is_negative:
-                # Négatif: augmenter la précision (dequantize avec dithering)
-                dither = torch.randn_like(modified) * original_std * abs_strength * 0.1
-                modified = modified + dither
-            else:
-                # Positif: réduire la précision (quantize)
-                num_levels = max(2, int(256 * (1.0 - abs_strength * 0.9)))
-                
-                # Normaliser entre 0 et 1
-                min_val = modified.min()
-                max_val = modified.max()
-                normalized = (modified - min_val) / (max_val - min_val + 1e-8)
-                
-                # Quantifier
-                quantized = torch.round(normalized * (num_levels - 1)) / (num_levels - 1)
-                
-                # Dénormaliser
-                modified = quantized * (max_val - min_val) + min_val
-                
-                if debug:
-                    print(f"   Quantize: {num_levels} niveaux")
-        
-        elif method == "🔸🔸🔸gradient_amplify🔹🔹":
-            # Amplification des gradients locaux (accentue les transitions)
-            if len(modified.shape) == 3:
-                # Calculer les différences entre tokens adjacents
-                diff = modified[:, 1:] - modified[:, :-1]
-                
-                # Amplifier ou réduire
-                if is_negative:
-                    # Négatif: lissage (réduit les gradients)
-                    diff = diff * (1.0 - abs_strength * 0.5)
-                else:
-                    # Positif: accentuation
-                    diff = diff * (1.0 + abs_strength * 2.0)
-                
-                # Reconstruction par intégration
-                modified[:, 1:] = modified[:, :1] + torch.cumsum(diff, dim=1)
-                
-                if debug:
-                    grad_strength = diff.abs().mean().item()
-                    print(f"   Gradient strength: {grad_strength:.4f}")
+                print(f"   ❌ Modification failed: {e}")
+            return tensor
         
         # ========== DEBUG OUTPUT ==========
         
@@ -376,49 +415,75 @@ class GreatConditioningModifier:
         
         if debug_mode:
             print("\n" + "="*80)
-            print("🔍 GREAT CONDITIONING MODIFIER")
+            print("🔍 GREAT CONDITIONING MODIFIER (Flux2 Compatible)")
             print("="*80)
             print(f"Strength: {modification_strength:.2f}, Method: {modification_method}")
         
-        # Modification numérique uniquement
         if modification_strength == 0:
             if debug_mode:
                 print("Strength = 0, pas de modification")
             return (conditioning,)
         
         new_conditioning = []
+        tensor_count = 0
+        modified_count = 0
+        skipped_count = 0
         
         for idx, item in enumerate(conditioning):
             if isinstance(item, torch.Tensor):
-                tensor = item.to(self.device)
-                modified_tensor = self._apply_modification(
-                    tensor, modification_method, modification_strength, seed, debug_mode
-                )
-                new_conditioning.append(modified_tensor)
+                tensor_count += 1
+                can_modify, _ = self._is_modifiable_tensor(item, debug_mode)
+                
+                if can_modify:
+                    tensor = item.to(self.device)
+                    modified_tensor = self._apply_modification(
+                        tensor, modification_method, modification_strength, seed, debug_mode
+                    )
+                    new_conditioning.append(modified_tensor)
+                    modified_count += 1
+                else:
+                    new_conditioning.append(item)
+                    skipped_count += 1
                 
             elif isinstance(item, (list, tuple)):
                 new_items = []
                 for sub_idx, sub_item in enumerate(item):
                     if isinstance(sub_item, torch.Tensor):
-                        if debug_mode:
-                            print(f"   ✓ Modifying tensor in position [{idx}][{sub_idx}]")
-                        tensor = sub_item.to(self.device)
-                        modified_tensor = self._apply_modification(
-                            tensor, modification_method, modification_strength, seed, debug_mode
-                        )
-                        new_items.append(modified_tensor)
+                        tensor_count += 1
+                        can_modify, _ = self._is_modifiable_tensor(sub_item, debug_mode)
+                        
+                        if can_modify:
+                            if debug_mode:
+                                print(f"   ✓ Modifying tensor in position [{idx}][{sub_idx}]")
+                            tensor = sub_item.to(self.device)
+                            modified_tensor = self._apply_modification(
+                                tensor, modification_method, modification_strength, seed, debug_mode
+                            )
+                            new_items.append(modified_tensor)
+                            modified_count += 1
+                        else:
+                            new_items.append(sub_item)
+                            skipped_count += 1
                         
                     elif isinstance(sub_item, dict):
                         new_dict = {}
                         for key, value in sub_item.items():
                             if isinstance(value, torch.Tensor):
-                                if debug_mode:
-                                    print(f"   ✓ Modifying tensor in dict['{key}']")
-                                tensor = value.to(self.device)
-                                modified_tensor = self._apply_modification(
-                                    tensor, modification_method, modification_strength, seed, debug_mode
-                                )
-                                new_dict[key] = modified_tensor
+                                tensor_count += 1
+                                can_modify, _ = self._is_modifiable_tensor(value, debug_mode)
+                                
+                                if can_modify:
+                                    if debug_mode:
+                                        print(f"   ✓ Modifying tensor in dict['{key}']")
+                                    tensor = value.to(self.device)
+                                    modified_tensor = self._apply_modification(
+                                        tensor, modification_method, modification_strength, seed, debug_mode
+                                    )
+                                    new_dict[key] = modified_tensor
+                                    modified_count += 1
+                                else:
+                                    new_dict[key] = value
+                                    skipped_count += 1
                             else:
                                 new_dict[key] = value
                         new_items.append(new_dict)
@@ -434,13 +499,21 @@ class GreatConditioningModifier:
                 new_dict = {}
                 for key, value in item.items():
                     if isinstance(value, torch.Tensor):
-                        if debug_mode:
-                            print(f"   ✓ Modifying tensor in dict['{key}']")
-                        tensor = value.to(self.device)
-                        modified_tensor = self._apply_modification(
-                            tensor, modification_method, modification_strength, seed, debug_mode
-                        )
-                        new_dict[key] = modified_tensor
+                        tensor_count += 1
+                        can_modify, _ = self._is_modifiable_tensor(value, debug_mode)
+                        
+                        if can_modify:
+                            if debug_mode:
+                                print(f"   ✓ Modifying tensor in dict['{key}']")
+                            tensor = value.to(self.device)
+                            modified_tensor = self._apply_modification(
+                                tensor, modification_method, modification_strength, seed, debug_mode
+                            )
+                            new_dict[key] = modified_tensor
+                            modified_count += 1
+                        else:
+                            new_dict[key] = value
+                            skipped_count += 1
                     else:
                         new_dict[key] = value
                 new_conditioning.append(new_dict)
@@ -448,6 +521,10 @@ class GreatConditioningModifier:
                 new_conditioning.append(item)
         
         if debug_mode:
+            print(f"\n📊 Résumé:")
+            print(f"   Total tensors: {tensor_count}")
+            print(f"   Modified: {modified_count}")
+            print(f"   Skipped: {skipped_count}")
             print("="*80 + "\n")
         
         return (new_conditioning,)
@@ -533,7 +610,7 @@ class InteractiveOrganicGradientNode:
     RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
     RETURN_NAMES = ("image", "palette_image", "palette_hex")
     FUNCTION = "generate"
-    CATEGORY = "Custom Nodes/Interactive"
+    CATEGORY = "🍄NDDG/Interactive"
 
     # ------------------------------------------------ #
 
@@ -792,7 +869,7 @@ class ImageBlendNode:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "blend"
-    CATEGORY = "NDDG/Blend"
+    CATEGORY = "🍄NDDG/Blend"
 
     # Définir les couleurs directement dans la classe
     @classmethod  
@@ -915,7 +992,7 @@ class GreatRandomOrganicGradientNode:
     RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
     RETURN_NAMES = ("image", "palette_image", "palette_hex")
     FUNCTION = "make_gradient"
-    CATEGORY = "NDDG/Generators"
+    CATEGORY = "🍄NDDG/Generators"
 
     def make_gradient(self, width, height, colors, blob_count, blob_shape, blur_strength,
                       background_color, random_background, random_palette,
