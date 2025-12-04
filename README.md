@@ -132,7 +132,7 @@ To see immediately which node is currently running!!
 ________________________________________
 ________________________________________
 
-🍄Great Multiply Sigmas
+<b>🍄Great Multiply Sigmas</b>
 
 This node adds functionality to the Jonseed node (https://github.com/Jonseed/ComfyUI-Detail-Daemon) with the additional option "s_curve" to apply the changes.
 You can now also choose different values ​​for the start and end of the affected area.
