@@ -17,6 +17,11 @@ import json
 import colorsys
 import random
 import math
+import matplotlib
+import matplotlib.pyplot as plt
+import base64
+from io import BytesIO
+import folder_paths
 
 
 # ----------------------------------------------------------------------------------#
@@ -1105,6 +1110,197 @@ class GreatRandomOrganicGradientNode:
 # ----------------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------------#
 
+class GreatMultiplySigmas:
+    def __init__(self):
+        self.output_dir = folder_paths.get_temp_directory()
+        self.type = "temp"
+        self.prefix_append = "_temp_" + ''.join(random.choice("abcdefghijklmnopqrstupvxyz") for x in range(5))
+        self.compress_level = 4
+    
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "sigmas": ("SIGMAS", {"forceInput": True}),
+                "factor_global": ("FLOAT", {"default": 1, "min": 0, "max": 100, "step": 0.001}),
+                "start_factor": ("FLOAT", {"default": 1, "min": 0, "max": 100, "step": 0.001}),
+                "end_factor": ("FLOAT", {"default": 1, "min": 0, "max": 100, "step": 0.001}),
+                "curve_type": (["linear", "s_curve"], {"default": "linear"}),
+                "zone_start": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.001}),
+                "zone_end": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.001}),
+                "curve_strength": ("FLOAT", {"default": 2.0, "min": 0.1, "max": 10, "step": 0.1}),
+            },
+            "optional": {
+                "show_preview": ("BOOLEAN", {"default": False}),
+            }
+        }
+    
+    FUNCTION = "simple_output"
+    RETURN_TYPES = ("SIGMAS",)
+    OUTPUT_NODE = True
+    CATEGORY = "NDDG/sigmas"
+    
+    def interpolate_curve(self, t, curve_type, strength):
+        """
+        Génère une valeur interpolée selon le type de courbe
+        t: position normalisée entre 0 et 1
+        curve_type: type de courbe d'interpolation
+        strength: force de la courbe (pour exponential et s_curve)
+        """
+        """
+        elif curve_type == "exponential":
+            # Courbe exponentielle: croissance rapide au début
+            return math.pow(t, strength)
+        
+        elif curve_type == "inverse_exponential":
+            # Courbe exponentielle inverse: croissance lente au début
+            return 1 - math.pow(1 - t, strength)
+        """
+        
+        if curve_type == "linear":
+            return t
+
+        elif curve_type == "s_curve":
+            # Courbe en S (sigmoïde): transition douce
+            # Utilise une fonction sigmoïde centrée
+            x = (t - 0.5) * strength * 2
+            return 1 / (1 + math.exp(-x))
+        
+        return t
+    
+    @staticmethod
+    def save_image_to_temp(image_pil, output_dir, prefix_append, compress_level=4):
+        """
+        Sauvegarde l'image PIL dans le dossier temp et retourne les infos pour l'UI
+        """
+        import os
+        from PIL.PngImagePlugin import PngInfo
+        
+        # Générer un nom de fichier unique
+        counter = 0
+        filename = f"{prefix_append}_{counter:05d}.png"
+        file_path = os.path.join(output_dir, filename)
+        
+        while os.path.exists(file_path):
+            counter += 1
+            filename = f"{prefix_append}_{counter:05d}.png"
+            file_path = os.path.join(output_dir, filename)
+        
+        # Sauvegarder l'image
+        metadata = PngInfo()
+        image_pil.save(file_path, pnginfo=metadata, compress_level=compress_level)
+        
+        return {
+            "filename": filename,
+            "subfolder": "",
+            "type": "temp"
+        }
+    
+    @staticmethod
+    def create_comparison_graph(sigmas_before, sigmas_after, zone_start_idx, zone_end_idx):
+        """
+        Crée un graphique comparatif avant/après modification des sigmas
+        """
+        plt.figure(figsize=(10, 6))
+        
+        # Convertir en numpy pour matplotlib
+        steps = np.arange(len(sigmas_before))
+        before = sigmas_before.cpu().numpy()
+        after = sigmas_after.cpu().numpy()
+        
+        # Tracer les courbes
+        plt.plot(steps, before, 'o-', color='blue', label='Before', linewidth=2, markersize=6, alpha=0.7)
+        plt.plot(steps, after, 'o-', color='red', label='After', linewidth=2, markersize=6, alpha=0.7)
+        
+        # Mettre en évidence la zone modifiée
+        if zone_start_idx < zone_end_idx:
+            plt.axvspan(zone_start_idx, zone_end_idx, alpha=0.35, color='yellow', label='Modified Zone')
+        
+        plt.title("Sigmas Comparison: Before vs After", fontsize=14, fontweight='bold')
+        plt.xlabel("Step Number", fontsize=11)
+        plt.ylabel("Sigma Value", fontsize=11)
+        plt.legend(loc='best', fontsize=10)
+        plt.grid(True, alpha=0.3, linestyle='--')
+        plt.tight_layout()
+        
+        # Convertir en image PIL
+        with BytesIO() as buf:
+            plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+            buf.seek(0)
+            image = Image.open(buf).copy()
+        
+        plt.close()
+        return image
+    
+    def simple_output(self, sigmas, factor_global, start_factor, end_factor, curve_type, zone_start, zone_end, curve_strength, show_preview=False):
+        # Clone les sigmas pour ne pas modifier l'entrée (stateless)
+        sigmas_original = sigmas.clone()
+        sigmas = sigmas.clone()
+        
+        total_sigmas = len(sigmas)
+        
+        # Déterminer la zone d'application (indices basés sur la position)
+        zone_start_idx = int(zone_start * (total_sigmas - 1))
+        zone_end_idx = int(zone_end * (total_sigmas - 1))
+        
+        # S'assurer que zone_end >= zone_start
+        if zone_end_idx < zone_start_idx:
+            zone_start_idx, zone_end_idx = zone_end_idx, zone_start_idx
+        
+        zone_length = zone_end_idx - zone_start_idx
+        
+        # Appliquer la modification UNIQUEMENT dans la zone définie
+        for i in range(zone_start_idx, zone_end_idx + 1):
+            # Calculer la position normalisée dans la zone (0 à 1)
+            if zone_length > 0:
+                t = (i - zone_start_idx) / zone_length
+            else:
+                t = 0
+            
+            # Appliquer la courbe d'interpolation
+            curve_value = self.interpolate_curve(t, curve_type, curve_strength)
+            
+            # Interpoler entre start_factor et end_factor selon la courbe
+            # start_factor = multiplicateur au DÉBUT de la zone (quand t=0)
+            # end_factor = multiplicateur à la FIN de la zone (quand t=1)
+            local_factor = start_factor + (end_factor - start_factor) * curve_value
+            
+            # Appliquer le facteur global
+            final_factor = factor_global * local_factor
+            
+            # Multiplication relative (comportement standard)
+            sigmas[i] *= final_factor
+        
+        # Les sigmas en dehors de [zone_start_idx, zone_end_idx] restent inchangés
+        
+        # Créer l'image de prévisualisation et l'afficher dans le node
+        ui_output = {"images": []}
+        
+        if show_preview:
+            try:
+                # Générer le graphique comparatif
+                pil_image = self.create_comparison_graph(sigmas_original, sigmas, zone_start_idx, zone_end_idx)
+                
+                # Sauvegarder l'image dans le dossier temp
+                saved_image = self.save_image_to_temp(
+                    pil_image, 
+                    self.output_dir, 
+                    self.prefix_append, 
+                    self.compress_level
+                )
+                
+                ui_output["images"].append(saved_image)
+                
+            except Exception as e:
+                print(f"[GreatMultiplySigmas] Erreur lors de la génération du graphique: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        return {"ui": ui_output, "result": (sigmas,)}
+
+# ----------------------------------------------------------------------------------#
+# ----------------------------------------------------------------------------------#
+
 # ----------------------------------------------------------------------------------#
 # ----------------------------------------------------------------------------------#
 
@@ -1114,11 +1310,13 @@ NODE_CLASS_MAPPINGS = {
     "GreatConditioningModifier": GreatConditioningModifier,
     "InteractiveOrganicGradientNode": InteractiveOrganicGradientNode,
     "ImageBlendNode": ImageBlendNode,
-    "GreatRandomOrganicGradientNode": GreatRandomOrganicGradientNode
+    "GreatRandomOrganicGradientNode": GreatRandomOrganicGradientNode,
+    "GreatMultiplySigmas": GreatMultiplySigmas
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "GreatConditioningModifier": "🍄Great Conditioning Modifier",
     "InteractiveOrganicGradientNode": "🍄Great Interactive Organic Gradient",
     "ImageBlendNode": "🍄Great Image Blend",
-    "GreatRandomOrganicGradientNode" : "🍄Great Random Organic Gradient"
+    "GreatRandomOrganicGradientNode" : "🍄Great Random Organic Gradient",
+    "GreatMultiplySigmas": "🍄Great Multiply Sigmas"
 }
