@@ -139,6 +139,7 @@ You can now also choose different values ​​for the start and end of the affe
 An optional display is also available, allowing you to visualize the curve before and after the changes.
 You can also chain these nodes for better control.
 
-<img width="309" height="709" alt="image" src="https://github.com/user-attachments/assets/fef375be-b486-4f21-ad78-883b86ce658c" />
-<img width="471" height="530" alt="image" src="https://github.com/user-attachments/assets/7551e5ee-643f-4709-827f-b9722f26375d" />
+![node-great-sigmas](https://github.com/user-attachments/assets/9f009493-e03f-4f0b-b7f1-11de75984452)
 
+________________________________________
+________________________________________
